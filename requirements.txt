@@ -4,3 +4,4 @@ numpy
 matplotlib
 psutil
 pandas
+pydantic>=2.0.0
