@@ -1,44 +1,46 @@
 """
 Centralised Hyperparameter Configuration for the VSSAG Framework.
-Ensures absolute reproducibility
+Powered by Pydantic for strict runtime type validation.
 """
-from dataclasses import dataclass
+from pydantic import BaseModel, Field
+from typing import Tuple
 
-@dataclass
-class PhysicsConfig:
-    nelx: int = 100
-    nely: int = 100
-    vol_target: float = 0.40
-    E0: float = 1.0           # Young's Modulus (Solid)
-    Emin: float = 1e-9        # Young's Modulus (Void - Singularity Guard)
-    penal: float = 3.0        # SIMP Penalization Power
-    nu: float = 0.3           # Poisson's Ratio
+class PhysicsConfig(BaseModel):
+    nelx: int = Field(100, description="Mesh resolution X")
+    nely: int = Field(100, description="Mesh resolution Y")
+    vol_target: float = Field(0.40, description="Target volume fraction constraint")
+    E0: float = Field(1.0, description="Young's Modulus (Solid)")
+    Emin: float = Field(1e-9, description="Young's Modulus (Void - Singularity Guard)")
+    penal: float = Field(3.0, description="SIMP Penalization Power")
+    nu: float = Field(0.3, description="Poisson's Ratio")
 
-@dataclass
-class NetworkConfig:
-    latent_dim_D: int = 64    # Global Latent Vector Dimension
-    hypernet_rank_R: int = 8  # Low-Rank Matrix Factorization bottleneck
-    siren_hidden_H: int = 128 # Continuous Manifold Width
-    siren_omega_0: float = 30.0 # Spatial Frequency Base
-    vssag_layers_L: int = 5   # Number of RK4 Pseudo-Time Steps
-    vssag_dt: float = 0.05    # ODE Integration Step Size
+class NetworkConfig(BaseModel):
+    latent_dim_D: int = Field(64, description="Global Latent Vector Dimension")
+    hypernet_rank_R: int = Field(8, description="Low-Rank Matrix Factorization bottleneck")
+    siren_hidden_H: int = Field(128, description="Continuous Manifold Width")
+    siren_omega_0: float = Field(30.0, description="Spatial Frequency Base")
+    vssag_layers_L: int = Field(5, description="Number of RK4 Pseudo-Time Steps")
+    vssag_dt: float = Field(0.05, description="ODE Integration Step Size")
 
-@dataclass
-class OptimizationConfig:
-    epochs: int = 1500
-    learning_rate: float = 2e-3
-    adam_betas: tuple = (0.9, 0.999)
-    
-    # Augmented Lagrangian (ALM) & Heaviside Parameters
-    alm_initial_mu: float = 50.0
-    alm_max_mu: float = 500.0
-    heaviside_initial_beta: float = 1.0
-    heaviside_max_beta: float = 64.0
-    continuation_multiplier: float = 1.2
-    update_interval_epochs: int = 50
-    volume_tolerance: float = 0.02
+class OptimizationConfig(BaseModel):
+    epochs: int = Field(1500, description="Total training epochs")
+    learning_rate: float = Field(2e-3, description="Adam optimizer learning rate")
+    adam_betas: Tuple[float, float] = Field((0.9, 0.999), description="Adam betas")
+    alm_initial_mu: float = Field(50.0, description="Initial ALM penalty")
+    alm_max_mu: float = Field(500.0, description="Maximum ALM penalty")
+    heaviside_initial_beta: float = Field(1.0, description="Initial Heaviside parameter")
+    heaviside_max_beta: float = Field(64.0, description="Maximum binarization strictness")
+    continuation_multiplier: float = Field(1.2, description="Penalty escalation multiplier")
+    update_interval_epochs: int = Field(50, description="Epochs between dual updates")
+    volume_tolerance: float = Field(0.02, description="Absolute volume tolerance limit")
 
-# Global Instantiation
-PHYSICS = PhysicsConfig()
-NETWORK = NetworkConfig()
-OPTIM = OptimizationConfig()
+class SystemConfig(BaseModel):
+    physics: PhysicsConfig = PhysicsConfig()
+    network: NetworkConfig = NetworkConfig()
+    optim: OptimizationConfig = OptimizationConfig()
+
+# Global Instantiation (Preserving backward compatibility with your scripts)
+_config = SystemConfig()
+PHYSICS = _config.physics
+NETWORK = _config.network
+OPTIM = _config.optim
